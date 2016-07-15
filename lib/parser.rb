@@ -13,9 +13,8 @@ class HTMLParser
   def fill_stack
     until @html.empty?
       cur_tag = find_next_tag(@html)
-      last_tag = @stack.last
-      if @stack.length > 1 && (cur_tag.index - last_tag.index > 1)
-        contents = @html[last_tag.index..cur_tag.index - 1]
+      if @stack.length > 1 && (cur_tag.index > 0)
+        contents = @html[0..cur_tag.index - 1]
         @stack << TNode.new(contents)
       end
       @stack << cur_tag
@@ -23,6 +22,7 @@ class HTMLParser
       @html = @html[new_index..-1]
     end
   end
+
 
   def print_stack
     @stack.each do |val|
