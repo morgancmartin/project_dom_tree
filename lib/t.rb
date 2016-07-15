@@ -6,11 +6,13 @@ html = "This is my <a>header link</a></h1>"
 
 html_string = "<div>  div text before  <p>    p text  </p>  <div>    more div text  </div>  div text after</div>"
 
-hp = HTMLParser.new(html_string)
+hp = HTMLParser.new
+
+hp.load_test_html
 
 hp.fill_stack
 
-hp.print_stack_values
+hp.print_stack
 
 
 
