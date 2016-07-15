@@ -1,0 +1,15 @@
+  def parse_p_tag(html)
+    parse_tag('p', html)
+  end
+
+  def parse_a_tag(html)
+    parse_tag('a', html)
+  end
+
+  def r_to_s(regex)
+    regex.to_s[7..-2]
+  end
+
+  def s_to_r(string)
+    Regexp.new(string)
+  end
