@@ -1,3 +1,15 @@
+
+
+
+
+#######################
+# WELCOME TO THE PARSER
+# THIS IS AN OLD FILE
+# ABANDON ALL HOPE,
+# YE WHO ENTER HERE
+#######################
+
+
 Node = Struct.new(:tag, :index, :attributes, :children)
 
 TNode = Struct.new(:contents, :depth, :parent)
