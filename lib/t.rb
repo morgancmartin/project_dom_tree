@@ -1,33 +1,19 @@
-require './parser'
+require './dom_reader'
+require './node_renderer'
+require './tree_searcher'
 
-html = "This is my <a>header link</a></h1>"
+reader = DOMReader.new
+tree = reader.build_tree('../test.html')
 
+renderer = NodeRenderer.new(tree)
+renderer.render(tree)
 
+searcher = TreeSearcher.new(tree)
+results = searcher.search_by(:id, "main-area")
+results.each { |node| renderer.render(node) }
 
-html_string = "<div>  div text before  <p>    p text  </p>  <div>    more div text  </div>  div text after</div>"
+results = searcher.search_descendents(results[0], :class, "bold")
+results.each { |node| renderer.render(node) }
 
-hp = HTMLParser.new
-
-hp.load_test_html
-
-hp.fill_stack
-
-hp.print_stack
-
-
-
-# p hp.open_tag?(hp.find_next_tag(html)[0])
-# p hp.find_next_tag(html)
-
-
-
-# until @html.empty?
-#   cur_tag = find_next_tag
-#   make_t_node(@stack.last[1], cur_tag[1]) if 
-#   if close_tag?(cur_tag)
-#     make_node(@stack.last, cur_tag)
-#     shorten_html(@stack.last[1], cur_tag[1])
-#   elsif open_tag?(cur_tag) && @stack.length > 1
-#     make_t_node(@stack.last[1], cur_tag[1])
-#     end
-# end
+results = searcher.search_ancestors(results[0], :id, "main-area")
+results.each { |node| renderer.render(node) }

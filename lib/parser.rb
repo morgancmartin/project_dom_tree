@@ -1,26 +1,107 @@
-Node = Struct.new(:name, :attributes, :children)
-TNode = Struct.new(:contents)
+Node = Struct.new(:tag, :index, :attributes, :children)
 
-Tag = Struct.new(:type, :index)
+TNode = Struct.new(:contents, :depth, :parent)
 
 class HTMLParser
 
   def initialize(html = nil)
     @stack = []
     @html = html
+    @index = 0
+    @root = nil
+    @level = 0
   end
 
-  def fill_stack
-    until @html.length < 4
-      cur_tag = find_next_tag(@html)
-      if @stack.length > 1 && (cur_tag.index > 0)
-        contents = @html[0..cur_tag.index - 1]
-        @stack << TNode.new(contents)
-      end
-      @stack << cur_tag
-      new_index = cur_tag.index + cur_tag.type.length
-      @html = @html[new_index..-1]
+  def build_tree
+    begin
+      break unless cur_node = get_next_tag
+      @root = cur_node if @root.nil?
+      handle_node(cur_node)
+    end until @stack.empty?
+    @root
+  end
+
+  def handle_node(node)
+    if open_tag?(node.tag)
+      handle_open_tag(node)
+    else
+      handle_close_tag(node)
     end
+  end
+
+  def handle_close_tag(node)
+    add_text_node(node.index - 1) if node.index > 1
+    @stack.pop
+    @index += node.tag.length + node.index
+  end
+
+  def handle_open_tag(node)
+    add_text_node(node.index - 1) if node.index > 1
+    add_attributes(node)
+    add_node_to_stack(node)
+    set_index(node)
+  end
+
+  def add_attributes(node)
+    set_node_attributes(node) if tag_contains_attributes?(node.tag)
+    node
+  end
+
+  def set_node_attributes(node)
+    tag = node.tag
+    while tag_contains_attributes?(tag)
+      match = / (.*?)="(.*?)"/.match(tag)
+      loc = (tag =~ / (.*?)="(.*?)"/) + match[0].length + 1
+      attribute = match[1].strip.to_sym
+      values = match[2].split(' ')
+      values = values[0] if values.length == 1
+      node.attributes[attribute] = match[2].split(' ')
+      tag = "< #{tag[loc..-1]}"
+    end
+    node
+  end
+
+  def tag_contains_attributes?(tag)
+    !!/<.*? .*?=".*?".*?>/.match(tag)
+  end
+
+  def add_node_to_stack(node)
+    @stack.last.children << node unless @stack.empty?
+    @stack << node
+  end
+
+  def set_index(node)
+    @index += node.tag.length + node.index
+  end
+
+  def get_next_tag
+    find_next_tag(@html[@index..-1])
+  end
+
+  def print_tree(node = @root)
+    node.is_a?(Node) ? print_node(node) : print_text_node(node)
+  end
+
+  def print_node(node)
+    puts formatted_tag(node.tag)
+    @level += 1
+    node.children.each { |child| print_tree(child) }
+    @level -= 1
+    puts formatted_tag(matching_closing_tag(node.tag))
+  end
+
+  def formatted_tag(tag)
+    length = tag.length
+    tag.rjust(length + (@level * 2))
+  end
+
+  def print_text_node(node)
+    puts formatted_tag(node.contents)
+  end
+
+  def add_text_node(index)
+    contents = @html[@index..(@index + index)].strip
+    @stack.last.children << TNode.new(contents) unless contents.empty?
   end
 
   def load_test_html
@@ -30,28 +111,33 @@ class HTMLParser
     @html = string
   end
 
-  def print_stack
-    @stack.each do |val|
-      p val
-    end
-  end
-
   def print_stack_values
+    return_string = ''
     @stack.each do |val|
       if val.is_a?(Tag)
-        puts "#{val.type}"
+        return_string << val.type
       elsif val.is_a?(TNode)
-        puts "#{val.contents}"
+        return_string << val.contents
       end
     end
+    puts return_string
   end
 
   def find_next_tag(html)
     match = /<.*?>/.match(html)
     loc = html =~ /<.*?>/
-    Tag.new(match[0], loc)
+    Node.new(match[0], loc, {}, [])
   end
 
+  def matching_closing_tag(tag)
+    tag = /<.*?[ >]/.match(tag)[0].strip
+    chars = tag.chars
+    chars.insert(1, '/') #</a>
+    chars << '>' unless chars.last == '>'
+    chars.join('')
+  end
+
+  # Removes the slash from a closing tag...
   def matching_tag(tag)
     chars = tag.chars
     chars.delete_at(1)
