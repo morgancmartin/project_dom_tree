@@ -19,13 +19,7 @@ class TreeSearcher
     matches.flatten
   end
 
-  def node_has_attribute(node, attribute, value)
-    return false unless node.is_a?(Node)
-    values = node.attributes[attribute.to_sym]
-    values.is_a?(Array) ? values.include?(value) : values == value
-  end
-
-  def search_descendents(node, attribute, value)
+  def search_descendants(node, attribute, value)
     matches = []
     node.children.each do |child|
       if child.is_a?(Node)
@@ -44,5 +38,13 @@ class TreeSearcher
       cur_node = cur_node.parent
     end
     matches
+  end
+
+  private
+
+  def node_has_attribute(node, attribute, value)
+    return false unless node.is_a?(Node)
+    values = node.attributes[attribute.to_sym]
+    values.is_a?(Array) ? values.include?(value) : values == value
   end
 end

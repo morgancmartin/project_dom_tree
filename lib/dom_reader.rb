@@ -1,7 +1,8 @@
-Node = Struct.new(:tag, :index, :attributes, :children, :parent)
-TNode = Struct.new(:contents, :depth, :parent)
+require_relative 'node'
+require_relative 'tnode'
 
 class DOMReader
+  attr_reader :root, :num_nodes
   ATTRIBUTE_FINDER = / (.*?)="(.*?)"/
   ATTRIBUTE_FINDER2 = /<.*? .*?=".*?".*?>/
   FIND_NEXT_TAG = /<.*?>/
@@ -9,15 +10,17 @@ class DOMReader
   OPEN_TAG_BOOL = /<[^\/].*?>/
   CLOSE_TAG_BOOL = /<[\/].*?>/
 
-  def initialize
+  def initialize(root = nil)
+    raise error unless root.is_a?(Node) || root.nil?
     @stack = []
     @html = nil
     @index = 0
-    @root = nil
+    @root = root
+    @num_nodes = 1
   end
 
   def build_tree(file)
-    @html = read_in_file(file)
+    @html = read_in_file(file) unless @html
     begin
       cur_node = get_next_tag
       @root = cur_node if @root.nil?
@@ -25,6 +28,31 @@ class DOMReader
     end until @stack.empty?
     @root
   end
+
+  def add_attributes(node)
+    set_node_attributes(node) if tag_contains_attributes?(node.tag)
+    node
+  end
+
+  def print_tree_nodes
+    print_nodes
+  end
+
+  def print_nodes
+    cur_node = @root
+    children = []
+    children.unshift( cur_node )
+    until children.empty?
+      cur_node.children.each do |child|
+        children << child unless children.include?(child)
+      end if cur_node.is_a?(Node) && cur_node.children.any?
+      children.flatten!
+      cur_node = children.shift
+      p cur_node.is_a?(Node) ? cur_node.tag : cur_node.contents
+    end
+  end
+
+  private
 
   def read_in_file(filepath)
     file = File.open(filepath, 'r')
@@ -39,6 +67,7 @@ class DOMReader
   end
 
   def handle_node(node)
+    @num_nodes += 1
     if open_tag?(node.tag)
       handle_open_tag(node)
     else
@@ -59,11 +88,6 @@ class DOMReader
     set_index(node)
   end
 
-  def add_attributes(node)
-    set_node_attributes(node) if tag_contains_attributes?(node.tag)
-    node
-  end
-
   def set_node_attributes(node)
     tag = node.tag
     while tag_contains_attributes?(tag)
@@ -72,7 +96,7 @@ class DOMReader
       attribute = match[1].strip.to_sym
       values = match[2].split(' ')
       values = values[0] if values.length == 1
-      node.attributes[attribute] = match[2].split(' ')
+      node.attributes[attribute] = values
       tag = "< #{tag[loc..-1]}"
     end
     node
@@ -83,8 +107,8 @@ class DOMReader
   end
 
   def add_node_to_stack(node)
-    @stack.last.children << node unless @stack.empty?
     node.parent = @stack.last unless @stack.empty?
+    @stack.last.children << node unless @stack.empty?
     @stack << node
   end
 
@@ -122,3 +146,6 @@ class DOMReader
     !!(CLOSE_TAG_BOOL.match(html))
   end
 end
+
+
+

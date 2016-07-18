@@ -12,8 +12,11 @@ searcher = TreeSearcher.new(tree)
 results = searcher.search_by(:id, "main-area")
 results.each { |node| renderer.render(node) }
 
-results = searcher.search_descendents(results[0], :class, "bold")
+results = searcher.search_descendants(results[0], :class, "bold")
 results.each { |node| renderer.render(node) }
 
 results = searcher.search_ancestors(results[0], :id, "main-area")
 results.each { |node| renderer.render(node) }
+
+reader.print_nodes
+
