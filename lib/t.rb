@@ -18,5 +18,6 @@ results.each { |node| renderer.render(node) }
 results = searcher.search_ancestors(results[0], :id, "main-area")
 results.each { |node| renderer.render(node) }
 
-reader.print_nodes
+# reader.print_nodes
 
+# p reader.root.children[0].children[1].children[0].children[1]

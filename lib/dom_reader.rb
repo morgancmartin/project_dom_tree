@@ -1,6 +1,6 @@
 require_relative 'node'
 require_relative 'tnode'
-
+require 'pry'
 class DOMReader
   attr_reader :root, :num_nodes
   ATTRIBUTE_FINDER = / (.*?)="(.*?)"/
@@ -25,7 +25,7 @@ class DOMReader
       cur_node = get_next_tag
       @root = cur_node if @root.nil?
       handle_node(cur_node)
-    end until @stack.empty?
+    end until @stack.empty? || (doctype?(@stack.last) && @num_nodes > 2)
     @root
   end
 
@@ -68,11 +68,18 @@ class DOMReader
 
   def handle_node(node)
     @num_nodes += 1
-    if open_tag?(node.tag)
+    if doctype?(node)
+      handle_doctype(node)
+    elsif open_tag?(node.tag)
       handle_open_tag(node)
     else
       handle_close_tag(node)
     end
+  end
+
+  def handle_doctype(node)
+    add_node_to_stack(node)
+    set_index(node)
   end
 
   def handle_close_tag(node)
@@ -140,6 +147,10 @@ class DOMReader
 
   def open_tag?(html)
     !!(OPEN_TAG_BOOL.match(html))
+  end
+
+  def doctype?(node)
+    node.tag.downcase == '<!doctype html>'
   end
 
   def close_tag?(html)
